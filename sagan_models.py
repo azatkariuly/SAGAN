@@ -301,6 +301,6 @@ class DiscriminatorQ(nn.Module):
 
         return out.squeeze(), p1, p2
 
-a = np.random.rand(64, 128)
-g = Generator(128)
+a = np.random.rand(64, 100)
+g = Generator(100)
 print(g(torch.tensor(a)))
