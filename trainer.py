@@ -116,9 +116,9 @@ class Trainer(object):
 
             # apply Gumbel Softmax
             z = tensor2var(torch.randn(real_images.size(0), self.z_dim))
-            fake_images,gf1,gf2 = self.G(z)
-            print('fake', fake_images.shape)
+            print('z', z.shape)
             return
+            fake_images,gf1,gf2 = self.G(z)
             d_out_fake,df1,df2 = self.D(fake_images)
 
             if self.adv_loss == 'wgan-gp':
