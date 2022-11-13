@@ -54,7 +54,7 @@ class Generator(nn.Module):
 
         repeat_num = int(np.log2(self.imsize)) - 3
         mult = 2 ** repeat_num # 8
-        layer1.append(SpectralNorm(TransposeConv2dLSQ(z_dim, conv_dim * mult, 4, nbits=nbits)))
+        layer1.append(SpectralNorm(nn.ConvTranspose2d(z_dim, conv_dim * mult, 4)))
         layer1.append(nn.BatchNorm2d(conv_dim * mult))
         layer1.append(nn.ReLU())
 
@@ -114,7 +114,7 @@ class Discriminator(nn.Module):
         layer3 = []
         last = []
 
-        layer1.append(SpectralNorm(nn.Conv2d(3, conv_dim, 4, 2, 1)))
+        layer1.append(SpectralNorm(Conv2dLSQ(3, conv_dim, 4, 2, 1, nbits=nbits)))
         layer1.append(nn.LeakyReLU(0.1))
 
         curr_dim = conv_dim
