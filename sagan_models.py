@@ -301,10 +301,9 @@ class DiscriminatorQ(nn.Module):
 
         return out.squeeze(), p1, p2
 
-a = torch.rand(64, 3, 64, 64)
-print(a)
-g = Generator(100)
+a = torch.rand(64, 128)
+g = Generator(64)
 d = Discriminator()
 
-out, p1, p2 = d(a)
+out, p1, p2 = g(a)
 print(out.shape, p1.shape, p2.shape)

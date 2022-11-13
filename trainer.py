@@ -201,7 +201,7 @@ class Trainer(object):
 
     def build_model(self):
 
-        self.G = Generator(self.batch_size,self.imsize, self.z_dim, self.g_conv_dim, self.nbits).cuda()
+        self.G = Generator(self.batch_size, self.imsize, self.z_dim, self.g_conv_dim, self.nbits).cuda()
         self.D = Discriminator(self.batch_size,self.imsize, self.d_conv_dim, self.nbits).cuda()
         if self.parallel:
             self.G = nn.DataParallel(self.G)
