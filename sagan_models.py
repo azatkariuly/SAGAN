@@ -16,7 +16,7 @@ class Self_Attn(nn.Module):
 
         self.query_conv = Conv2dLSQ(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1, nbits=nbits)
         self.key_conv = Conv2dLSQ(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1, nbits=nbits)
-        self.value_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim , kernel_size= 1)
+        self.value_conv = Conv2dLSQ(in_channels = in_dim , out_channels = in_dim , kernel_size= 1, nbits=nbits)
         self.gamma = nn.Parameter(torch.zeros(1))
 
         self.softmax  = nn.Softmax(dim=-1) #
@@ -83,7 +83,7 @@ class Generator(nn.Module):
         self.l2 = nn.Sequential(*layer2)
         self.l3 = nn.Sequential(*layer3)
 
-        last.append(TransposeConv2dLSQ(curr_dim, 3, 4, 2, 1, nbits=nbits))
+        last.append(nn.ConvTranspose2d(curr_dim, 3, 4, 2, 1))
         last.append(nn.Tanh())
         self.last = nn.Sequential(*last)
 
@@ -137,7 +137,7 @@ class Discriminator(nn.Module):
         self.l2 = nn.Sequential(*layer2)
         self.l3 = nn.Sequential(*layer3)
 
-        last.append(Conv2dLSQ(curr_dim, 1, 4, nbits=nbits))
+        last.append(nn.Conv2d(curr_dim, 1, 4))
         self.last = nn.Sequential(*last)
 
         self.attn1 = Self_Attn(256, 'relu')

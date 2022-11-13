@@ -92,6 +92,7 @@ class Trainer(object):
 
         # Start time
         start_time = time.time()
+        best_fid = inf
         for step in range(start, self.total_step):
 
             # ================== Train D ================== #
@@ -125,6 +126,7 @@ class Trainer(object):
                 d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
 
             fretchet_dist=calculate_fretchet(real_images,fake_images,model)
+            best_fid = min(best_fid, fretchet_dist)
 
 
             # Backward + Optimize
@@ -180,27 +182,33 @@ class Trainer(object):
                 elapsed = time.time() - start_time
                 elapsed = str(datetime.timedelta(seconds=elapsed))
                 print("Elapsed [{}], G_step [{}/{}], D_step[{}/{}], d_out_real: {:.4f}, "
-                      " ave_gamma_l3: {:.4f}, ave_gamma_l4: {:.4f}, FID: {:.4f}".
+                      " ave_gamma_l3: {:.4f}, ave_gamma_l4: {:.4f}, FID: {:.4f}, BEST FID: {:.4f}".
                       format(elapsed, step + 1, self.total_step, (step + 1),
                              self.total_step , d_loss_real.data,
-                             self.G.attn1.gamma.mean().data, self.G.attn2.gamma.mean().data, fretchet_dist ))
+                             self.G.attn1.gamma.mean().data, self.G.attn2.gamma.mean().data, fretchet_dist,
+                             best_fid))
 
-            # Sample images
-            if (step + 1) % self.sample_step == 0:
-                fake_images,_,_= self.G(fixed_z)
-                save_image(denorm(fake_images.data),
-                           os.path.join(self.sample_path, '{}_fake.png'.format(step + 1)))
-
-            if (step+1) % model_save_step==0:
-                torch.save(self.G.state_dict(),
-                           os.path.join(self.model_save_path, '{}_G.pth'.format(step + 1)))
-                torch.save(self.D.state_dict(),
-                           os.path.join(self.model_save_path, '{}_D.pth'.format(step + 1)))
+            # # Sample images
+            # if (step + 1) % self.sample_step == 0:
+            #     fake_images,_,_= self.G(fixed_z)
+            #     save_image(denorm(fake_images.data),
+            #                os.path.join(self.sample_path, '{}_fake.png'.format(step + 1)))
+            #
+            # if (step+1) % model_save_step==0:
+            #     torch.save(self.G.state_dict(),
+            #                os.path.join(self.model_save_path, '{}_G.pth'.format(step + 1)))
+            #     torch.save(self.D.state_dict(),
+            #                os.path.join(self.model_save_path, '{}_D.pth'.format(step + 1)))
 
     def build_model(self):
 
         self.G = Generator(self.batch_size, self.imsize, self.z_dim, self.g_conv_dim, self.nbits).cuda()
         self.D = Discriminator(self.batch_size,self.imsize, self.d_conv_dim, self.nbits).cuda()
+
+        # print networks
+        print(self.G)
+        print(self.D)
+
         if self.parallel:
             self.G = nn.DataParallel(self.G)
             self.D = nn.DataParallel(self.D)
@@ -211,9 +219,6 @@ class Trainer(object):
         self.d_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.D.parameters()), self.d_lr, [self.beta1, self.beta2])
 
         self.c_loss = torch.nn.CrossEntropyLoss()
-        # print networks
-        print(self.G)
-        print(self.D)
 
     def build_tensorboard(self):
         from logger import Logger
