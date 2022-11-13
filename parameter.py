@@ -13,6 +13,7 @@ def get_parameters():
     parser.add_argument('--imsize', type=int, default=32)
     parser.add_argument('--g_num', type=int, default=5)
     parser.add_argument('--z_dim', type=int, default=128)
+    parser.add_argument('--nbits', type=int, default=3)
     parser.add_argument('--g_conv_dim', type=int, default=64)
     parser.add_argument('--d_conv_dim', type=int, default=64)
     parser.add_argument('--lambda_gp', type=float, default=10)
@@ -39,7 +40,7 @@ def get_parameters():
     parser.add_argument('--use_tensorboard', type=str2bool, default=False)
 
     # Path
-    parser.add_argument('--image_path', type=str, default='./data')
+    parser.add_argument('--image_path', type=str, default='/home/azatkariuly/data/img_align_celeba')
     parser.add_argument('--log_path', type=str, default='./logs')
     parser.add_argument('--model_save_path', type=str, default='./models')
     parser.add_argument('--sample_path', type=str, default='./samples')

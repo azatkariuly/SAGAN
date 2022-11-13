@@ -5,16 +5,18 @@ from torch.autograd import Variable
 from spectral import SpectralNorm
 import numpy as np
 
+from quantization_modules import Conv2dLSQ, TransposeConv2dLSQ
+
 class Self_Attn(nn.Module):
     """ Self attention Layer"""
-    def __init__(self,in_dim,activation):
+    def __init__(self,in_dim,activation,nbits):
         super(Self_Attn,self).__init__()
         self.chanel_in = in_dim
         self.activation = activation
 
-        self.query_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1)
-        self.key_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1)
-        self.value_conv = nn.Conv2d(in_channels = in_dim , out_channels = in_dim , kernel_size= 1)
+        self.query_conv = Conv2dLSQ(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1, nbits=nbits)
+        self.key_conv = Conv2dLSQ(in_channels = in_dim , out_channels = in_dim//8 , kernel_size= 1, nbits=nbits)
+        self.value_conv = Conv2dLSQ(in_channels = in_dim , out_channels = in_dim , kernel_size= 1, nbits=nbits)
         self.gamma = nn.Parameter(torch.zeros(1))
 
         self.softmax  = nn.Softmax(dim=-1) #
@@ -42,7 +44,7 @@ class Self_Attn(nn.Module):
 class Generator(nn.Module):
     """Generator."""
 
-    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64):
+    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64, nbits=3):
         super(Generator, self).__init__()
         self.imsize = image_size
         layer1 = []
@@ -52,26 +54,26 @@ class Generator(nn.Module):
 
         repeat_num = int(np.log2(self.imsize)) - 3
         mult = 2 ** repeat_num # 8
-        layer1.append(SpectralNorm(nn.ConvTranspose2d(z_dim, conv_dim * mult, 4)))
+        layer1.append(SpectralNorm(TransposeConv2dLSQ(z_dim, conv_dim * mult, 4, nbits=nbits)))
         layer1.append(nn.BatchNorm2d(conv_dim * mult))
         layer1.append(nn.ReLU())
 
         curr_dim = conv_dim * mult
 
-        layer2.append(SpectralNorm(nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1)))
+        layer2.append(SpectralNorm(TransposeConv2dLSQ(curr_dim, int(curr_dim / 2), 4, 2, 1, nbits=nbits)))
         layer2.append(nn.BatchNorm2d(int(curr_dim / 2)))
         layer2.append(nn.ReLU())
 
         curr_dim = int(curr_dim / 2)
 
-        layer3.append(SpectralNorm(nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1)))
+        layer3.append(SpectralNorm(TransposeConv2dLSQ(curr_dim, int(curr_dim / 2), 4, 2, 1, nbits=nbits)))
         layer3.append(nn.BatchNorm2d(int(curr_dim / 2)))
         layer3.append(nn.ReLU())
 
         if self.imsize == 64:
             layer4 = []
             curr_dim = int(curr_dim / 2)
-            layer4.append(SpectralNorm(nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1)))
+            layer4.append(SpectralNorm(TransposeConv2dLSQ(curr_dim, int(curr_dim / 2), 4, 2, 1, nbits=nbits)))
             layer4.append(nn.BatchNorm2d(int(curr_dim / 2)))
             layer4.append(nn.ReLU())
             self.l4 = nn.Sequential(*layer4)
@@ -81,7 +83,7 @@ class Generator(nn.Module):
         self.l2 = nn.Sequential(*layer2)
         self.l3 = nn.Sequential(*layer3)
 
-        last.append(nn.ConvTranspose2d(curr_dim, 3, 4, 2, 1))
+        last.append(TransposeConv2dLSQ(curr_dim, 3, 4, 2, 1, nbits=nbits))
         last.append(nn.Tanh())
         self.last = nn.Sequential(*last)
 
@@ -104,7 +106,7 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
     """Discriminator, Auxiliary Classifier."""
 
-    def __init__(self, batch_size=64, image_size=64, conv_dim=64):
+    def __init__(self, batch_size=64, image_size=64, conv_dim=64, nbits=3):
         super(Discriminator, self).__init__()
         self.imsize = image_size
         layer1 = []
@@ -112,22 +114,22 @@ class Discriminator(nn.Module):
         layer3 = []
         last = []
 
-        layer1.append(SpectralNorm(nn.Conv2d(3, conv_dim, 4, 2, 1)))
+        layer1.append(SpectralNorm(Conv2dLSQ(3, conv_dim, 4, 2, 1, nbits=nbits)))
         layer1.append(nn.LeakyReLU(0.1))
 
         curr_dim = conv_dim
 
-        layer2.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
+        layer2.append(SpectralNorm(Conv2dLSQ(curr_dim, curr_dim * 2, 4, 2, 1, nbits=nbits)))
         layer2.append(nn.LeakyReLU(0.1))
         curr_dim = curr_dim * 2
 
-        layer3.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
+        layer3.append(SpectralNorm(Conv2dLSQ(curr_dim, curr_dim * 2, 4, 2, 1, nbits=nbits)))
         layer3.append(nn.LeakyReLU(0.1))
         curr_dim = curr_dim * 2
 
         if self.imsize == 64:
             layer4 = []
-            layer4.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
+            layer4.append(SpectralNorm(Conv2dLSQ(curr_dim, curr_dim * 2, 4, 2, 1, nbits=nbits)))
             layer4.append(nn.LeakyReLU(0.1))
             self.l4 = nn.Sequential(*layer4)
             curr_dim = curr_dim*2
@@ -135,7 +137,7 @@ class Discriminator(nn.Module):
         self.l2 = nn.Sequential(*layer2)
         self.l3 = nn.Sequential(*layer3)
 
-        last.append(nn.Conv2d(curr_dim, 1, 4))
+        last.append(Conv2dLSQ(curr_dim, 1, 4, nbits=nbits))
         self.last = nn.Sequential(*last)
 
         self.attn1 = Self_Attn(256, 'relu')
@@ -151,5 +153,3 @@ class Discriminator(nn.Module):
         out=self.last(out)
 
         return out.squeeze(), p1, p2
-
-print(Generator(128))
