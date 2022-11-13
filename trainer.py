@@ -125,9 +125,6 @@ class Trainer(object):
             elif self.adv_loss == 'hinge':
                 d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
 
-            fretchet_dist=calculate_fretchet(real_images,fake_images,model)
-            best_fid = min(best_fid, fretchet_dist)
-
 
             # Backward + Optimize
             d_loss = d_loss_real + d_loss_fake
@@ -179,6 +176,9 @@ class Trainer(object):
 
             # Print out log info
             if (step + 1) % self.log_step == 0:
+                fretchet_dist=calculate_fretchet(real_images,fake_images,model)
+                best_fid = min(best_fid, fretchet_dist)
+                
                 elapsed = time.time() - start_time
                 elapsed = str(datetime.timedelta(seconds=elapsed))
                 print("Elapsed [{}], G_step [{}/{}], D_step[{}/{}], d_out_real: {:.4f}, "
