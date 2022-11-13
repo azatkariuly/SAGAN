@@ -7,7 +7,7 @@ import numpy as np
 
 class Self_Attn(nn.Module):
     """ Self attention Layer"""
-    def __init__(self,in_dim,activation):
+    def __init__(self,in_dim,activation, nbits=3):
         super(Self_Attn,self).__init__()
         self.chanel_in = in_dim
         self.activation = activation
@@ -42,7 +42,7 @@ class Self_Attn(nn.Module):
 class Generator(nn.Module):
     """Generator."""
 
-    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64):
+    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64, nbits=3):
         super(Generator, self).__init__()
         self.imsize = image_size
         layer1 = []
@@ -104,7 +104,7 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
     """Discriminator, Auxiliary Classifier."""
 
-    def __init__(self, batch_size=64, image_size=64, conv_dim=64):
+    def __init__(self, batch_size=64, image_size=64, conv_dim=64, nbits=3):
         super(Discriminator, self).__init__()
         self.imsize = image_size
         layer1 = []
