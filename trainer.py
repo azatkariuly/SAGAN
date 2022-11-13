@@ -104,6 +104,9 @@ class Trainer(object):
                 data_iter = iter(self.data_loader)
                 real_images, _ = next(data_iter)
 
+            print('real image shape', real_images.shape)
+            return
+
             # Compute loss with real images
             # dr1, dr2, df1, df2, gf1, gf2 are attention scores
             real_images = tensor2var(real_images)
