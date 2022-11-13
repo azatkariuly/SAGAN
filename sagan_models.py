@@ -153,3 +153,7 @@ class Discriminator(nn.Module):
         out=self.last(out)
 
         return out.squeeze(), p1, p2
+
+a = np.random.rand(64, 128)
+g = Generator(128)
+print(g(torch.tensor(a)))
