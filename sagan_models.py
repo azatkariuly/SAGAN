@@ -9,7 +9,7 @@ from quantization_modules import Conv2dLSQ, TransposeConv2dLSQ
 
 class Self_Attn(nn.Module):
     """ Self attention Layer"""
-    def __init__(self,in_dim,activation, nbits):
+    def __init__(self,in_dim,activation):
         super(Self_Attn,self).__init__()
         self.chanel_in = in_dim
         self.activation = activation
@@ -44,7 +44,7 @@ class Self_Attn(nn.Module):
 class Generator(nn.Module):
     """Generator."""
 
-    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64, nbits=3):
+    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64):
         super(Generator, self).__init__()
         self.imsize = image_size
         layer1 = []
@@ -87,8 +87,8 @@ class Generator(nn.Module):
         last.append(nn.Tanh())
         self.last = nn.Sequential(*last)
 
-        self.attn1 = Self_Attn( 128, 'relu', nbits=nbits)
-        self.attn2 = Self_Attn( 64,  'relu', nbits=nbits)
+        self.attn1 = Self_Attn( 128, 'relu')
+        self.attn2 = Self_Attn( 64,  'relu')
 
     def forward(self, z):
         z = z.view(z.size(0), z.size(1), 1, 1)
@@ -100,10 +100,61 @@ class Generator(nn.Module):
         out,p2 = self.attn2(out)
         out=self.last(out)
 
-        return out, p1,
+        return out, p1, p2
 
 
-class Self_Attn1(nn.Module):
+class Discriminator(nn.Module):
+    """Discriminator, Auxiliary Classifier."""
+
+    def __init__(self, batch_size=64, image_size=64, conv_dim=64):
+        super(Discriminator, self).__init__()
+        self.imsize = image_size
+        layer1 = []
+        layer2 = []
+        layer3 = []
+        last = []
+
+        layer1.append(SpectralNorm(nn.Conv2d(3, conv_dim, 4, 2, 1)))
+        layer1.append(nn.LeakyReLU(0.1))
+
+        curr_dim = conv_dim
+
+        layer2.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
+        layer2.append(nn.LeakyReLU(0.1))
+        curr_dim = curr_dim * 2
+
+        layer3.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
+        layer3.append(nn.LeakyReLU(0.1))
+        curr_dim = curr_dim * 2
+
+        if self.imsize == 64:
+            layer4 = []
+            layer4.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
+            layer4.append(nn.LeakyReLU(0.1))
+            self.l4 = nn.Sequential(*layer4)
+            curr_dim = curr_dim*2
+        self.l1 = nn.Sequential(*layer1)
+        self.l2 = nn.Sequential(*layer2)
+        self.l3 = nn.Sequential(*layer3)
+
+        last.append(nn.Conv2d(curr_dim, 1, 4))
+        self.last = nn.Sequential(*last)
+
+        self.attn1 = Self_Attn(256, 'relu')
+        self.attn2 = Self_Attn(512, 'relu')
+
+    def forward(self, x):
+        out = self.l1(x)
+        out = self.l2(out)
+        out = self.l3(out)
+        out,p1 = self.attn1(out)
+        out=self.l4(out)
+        out,p2 = self.attn2(out)
+        out=self.last(out)
+
+        return out.squeeze(), p1, p2
+
+class Self_AttnQ(nn.Module):
     """ Self attention Layer"""
     def __init__(self,in_dim,activation,nbits):
         super(Self_Attn,self).__init__()
@@ -137,7 +188,7 @@ class Self_Attn1(nn.Module):
         out = self.gamma*out + x
         return out,attention
 
-class Generator1(nn.Module):
+class GeneratorQ(nn.Module):
     """Generator."""
 
     def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64, nbits=3):
@@ -183,8 +234,8 @@ class Generator1(nn.Module):
         last.append(nn.Tanh())
         self.last = nn.Sequential(*last)
 
-        self.attn1 = Self_Attn( 128, 'relu', nbits=nbits)
-        self.attn2 = Self_Attn( 64,  'relu', nbits=nbits)
+        self.attn1 = Self_AttnQ( 128, 'relu', nbits=nbits)
+        self.attn2 = Self_AttnQ( 64,  'relu', nbits=nbits)
 
     def forward(self, z):
         z = z.view(z.size(0), z.size(1), 1, 1)
@@ -199,7 +250,7 @@ class Generator1(nn.Module):
         return out, p1, p2
 
 
-class Discriminator(nn.Module):
+class DiscriminatorQ(nn.Module):
     """Discriminator, Auxiliary Classifier."""
 
     def __init__(self, batch_size=64, image_size=64, conv_dim=64, nbits=3):
@@ -236,8 +287,8 @@ class Discriminator(nn.Module):
         last.append(Conv2dLSQ(curr_dim, 1, 4, nbits=nbits))
         self.last = nn.Sequential(*last)
 
-        self.attn1 = Self_Attn(256, 'relu', nbits=nbits)
-        self.attn2 = Self_Attn(512, 'relu', nbits=nbits)
+        self.attn1 = Self_AttnQ(256, 'relu', nbits=nbits)
+        self.attn2 = Self_AttnQ(512, 'relu', nbits=nbits)
 
     def forward(self, x):
         out = self.l1(x)
