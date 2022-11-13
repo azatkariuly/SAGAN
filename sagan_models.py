@@ -306,5 +306,5 @@ print(a)
 g = Generator(100)
 d = Discriminator()
 
-out = d(a)
+out, p1, p2 = d(a)
 print(out.shape)
