@@ -114,7 +114,7 @@ class Discriminator(nn.Module):
         layer3 = []
         last = []
 
-        layer1.append(SpectralNorm(Conv2dLSQ(3, conv_dim, 4, 2, 1, nbits)))
+        layer1.append(SpectralNorm(Conv2dLSQ(3, conv_dim, 4, 2, 1, nbits=nbits)))
         layer1.append(nn.LeakyReLU(0.1))
 
         curr_dim = conv_dim
