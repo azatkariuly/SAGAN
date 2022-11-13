@@ -54,6 +54,67 @@ class Generator(nn.Module):
 
         repeat_num = int(np.log2(self.imsize)) - 3
         mult = 2 ** repeat_num # 8
+        layer1.append(SpectralNorm(nn.ConvTranspose2d(z_dim, conv_dim * mult, 4)))
+        layer1.append(nn.BatchNorm2d(conv_dim * mult))
+        layer1.append(nn.ReLU())
+
+        curr_dim = conv_dim * mult
+
+        layer2.append(SpectralNorm(nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1)))
+        layer2.append(nn.BatchNorm2d(int(curr_dim / 2)))
+        layer2.append(nn.ReLU())
+
+        curr_dim = int(curr_dim / 2)
+
+        layer3.append(SpectralNorm(nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1)))
+        layer3.append(nn.BatchNorm2d(int(curr_dim / 2)))
+        layer3.append(nn.ReLU())
+
+        if self.imsize == 64:
+            layer4 = []
+            curr_dim = int(curr_dim / 2)
+            layer4.append(SpectralNorm(nn.ConvTranspose2d(curr_dim, int(curr_dim / 2), 4, 2, 1)))
+            layer4.append(nn.BatchNorm2d(int(curr_dim / 2)))
+            layer4.append(nn.ReLU())
+            self.l4 = nn.Sequential(*layer4)
+            curr_dim = int(curr_dim / 2)
+
+        self.l1 = nn.Sequential(*layer1)
+        self.l2 = nn.Sequential(*layer2)
+        self.l3 = nn.Sequential(*layer3)
+
+        last.append(nn.ConvTranspose2d(curr_dim, 3, 4, 2, 1))
+        last.append(nn.Tanh())
+        self.last = nn.Sequential(*last)
+
+        self.attn1 = Self_Attn( 128, 'relu')
+        self.attn2 = Self_Attn( 64,  'relu')
+
+    def forward(self, z):
+        z = z.view(z.size(0), z.size(1), 1, 1)
+        out=self.l1(z)
+        out=self.l2(out)
+        out=self.l3(out)
+        out,p1 = self.attn1(out)
+        out=self.l4(out)
+        out,p2 = self.attn2(out)
+        out=self.last(out)
+
+        return out, p1,
+
+class Generator1(nn.Module):
+    """Generator."""
+
+    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64, nbits=3):
+        super(Generator, self).__init__()
+        self.imsize = image_size
+        layer1 = []
+        layer2 = []
+        layer3 = []
+        last = []
+
+        repeat_num = int(np.log2(self.imsize)) - 3
+        mult = 2 ** repeat_num # 8
         layer1.append(SpectralNorm(TransposeConv2dLSQ(z_dim, conv_dim * mult, 4, nbits=nbits)))
         layer1.append(nn.BatchNorm2d(conv_dim * mult))
         layer1.append(nn.ReLU())
