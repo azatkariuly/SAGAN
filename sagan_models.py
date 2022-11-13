@@ -305,4 +305,6 @@ a = np.random.rand(64, 3, 64, 64)
 a = torch.tensor(a)
 g = Generator(100)
 d = Discriminator()
-print(a.double())
+
+out = d(a.type(torch.DoubleTensor))
+print(out.shape)
