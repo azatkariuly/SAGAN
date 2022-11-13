@@ -108,7 +108,7 @@ class Trainer(object):
             # dr1, dr2, df1, df2, gf1, gf2 are attention scores
             real_images = tensor2var(real_images)
             d_out_real,dr1,dr2 = self.D(real_images)
-            print('output from d', d_out_real, dr1, dr2)
+            print('output from d', d_out_real.shape, dr1.shape, dr2.shape)
             return
             if self.adv_loss == 'wgan-gp':
                 d_loss_real = - torch.mean(d_out_real)
