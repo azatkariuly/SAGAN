@@ -35,9 +35,9 @@ def quantizeLSQ(v, s, p, isActivation=False):
 
 class TransposeConv2dLSQ(nn.ConvTranspose2d):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1, bias=True, **kwargs_q):
+                 padding=0, output_padding=0, groups=1, bias=True, dilation=1, **kwargs_q):
         super(TransposeConv2dLSQ, self).__init__(in_channels, out_channels, kernel_size, stride=stride,
-                                        padding=padding, dilation=dilation, groups=groups, bias=bias)
+                                        padding=padding, output_padding=output_padding, groups=groups, bias=bias, dilation=dilation)
 
         self.nbits = kwargs_q['nbits']
         self.step_size = Parameter(torch.Tensor(1))
@@ -52,7 +52,7 @@ class TransposeConv2dLSQ(nn.ConvTranspose2d):
 
         w_q = quantizeLSQ(self.weight, self.step_size, self.nbits)
 
-        out = nn.functional.conv_transpose2d(x, w_q, None, self.stride, self.padding, self.dilation, self.groups)
+        out = nn.functional.conv_transpose2d(x, w_q, None, self.stride, self.padding, self.output_padding, self.groups, self.dilation)
 
         if not self.bias is None:
             self.bias.org=self.bias.data.clone()

@@ -54,7 +54,7 @@ class Generator(nn.Module):
 
         repeat_num = int(np.log2(self.imsize)) - 3
         mult = 2 ** repeat_num # 8
-        layer1.append(SpectralNorm(nn.ConvTranspose2d(z_dim, conv_dim * mult, 4)))
+        layer1.append(SpectralNorm(TransposeConv2dLSQ(z_dim, conv_dim * mult, 4, nbits=nbits)))
         layer1.append(nn.BatchNorm2d(conv_dim * mult))
         layer1.append(nn.ReLU())
 
