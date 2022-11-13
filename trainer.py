@@ -27,6 +27,7 @@ class Trainer(object):
         self.imsize = config.imsize
         self.g_num = config.g_num
         self.z_dim = config.z_dim
+        self.nbits = config.nbits
         self.g_conv_dim = config.g_conv_dim
         self.d_conv_dim = config.d_conv_dim
         self.parallel = config.parallel
