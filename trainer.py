@@ -92,7 +92,7 @@ class Trainer(object):
 
         # Start time
         start_time = time.time()
-        best_fid = inf
+        best_fid = float("inf")
         for step in range(start, self.total_step):
 
             # ================== Train D ================== #
