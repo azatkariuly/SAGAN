@@ -41,25 +41,31 @@ class TransposeConv2dLSQ(nn.ConvTranspose2d):
 
         self.nbits = kwargs_q['nbits']
         self.step_size = Parameter(torch.Tensor(1))
+        self.step_size1 = Parameter(torch.Tensor(1))
 
         #buffer is not updated for optim.step
         self.register_buffer('init_state', torch.zeros(1))
+        self.register_buffer('init_state1', torch.zeros(1))
 
     def forward(self, x):
         if self.init_state == 0:
             self.step_size.data.copy_(2 * self.weight.abs().mean() / math.sqrt(2 ** self.nbits - 1))
             self.init_state.fill_(1)
 
-        w_q = quantizeLSQ(self.weight, self.step_size, self.nbits)
+        if self.init_state1 == 0:
+            self.step_size1.data.copy_(2 * x.abs().mean() / math.sqrt(2 ** self.nbits - 1))
+            self.init_state1.fill_(1)
 
-        out = nn.functional.conv_transpose2d(x, w_q, None, self.stride, self.padding, self.output_padding, self.groups, self.dilation)
+        w_q = quantizeLSQ(self.weight, self.step_size, self.nbits)
+        x_q = quantizeLSQ(x, self.step_size1, self.nbits, isActivation=True)
+
+        out = nn.functional.conv_transpose2d(x_q, w_q, None, self.stride, self.padding, self.output_padding, self.groups, self.dilation)
 
         if not self.bias is None:
             self.bias.org=self.bias.data.clone()
             out += self.bias.view(1, -1, 1, 1).expand_as(out)
 
         return out
-
 
 class Conv2dLSQ(nn.Conv2d):
 
@@ -70,18 +76,25 @@ class Conv2dLSQ(nn.Conv2d):
 
         self.nbits = kwargs['nbits']
         self.step_size = Parameter(torch.Tensor(1))
+        self.step_size1 = Parameter(torch.Tensor(1))
 
         #buffer is not updated for optim.step
         self.register_buffer('init_state', torch.zeros(1))
+        self.register_buffer('init_state1', torch.zeros(1))
 
     def forward(self, input):
         if self.init_state == 0:
             self.step_size.data.copy_(2 * self.weight.abs().mean() / math.sqrt(2 ** self.nbits - 1))
             self.init_state.fill_(1)
 
-        w_q = quantizeLSQ(self.weight, self.step_size, self.nbits)
+        if self.init_state1 == 0:
+            self.step_size1.data.copy_(2 * input.abs().mean() / math.sqrt(2 ** self.nbits - 1))
+            self.init_state1.fill_(1)
 
-        out = nn.functional.conv2d(input, w_q, None, self.stride, self.padding, self.dilation, self.groups)
+        w_q = quantizeLSQ(self.weight, self.step_size, self.nbits)
+        x_q = quantizeLSQ(input, self.step_size1, self.nbits, isActivation=True)
+
+        out = nn.functional.conv2d(x_q, w_q, None, self.stride, self.padding, self.dilation, self.groups)
 
         if not self.bias is None:
             self.bias.org=self.bias.data.clone()
