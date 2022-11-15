@@ -28,6 +28,7 @@ class Trainer(object):
         self.g_num = config.g_num
         self.z_dim = config.z_dim
         self.nbits = config.nbits
+        self.nbits_act = config.nbits_act
         self.g_conv_dim = config.g_conv_dim
         self.d_conv_dim = config.d_conv_dim
         self.parallel = config.parallel
@@ -178,7 +179,7 @@ class Trainer(object):
             if (step + 1) % self.log_step == 0:
                 fretchet_dist=calculate_fretchet(real_images,fake_images,model)
                 best_fid = min(best_fid, fretchet_dist)
-                
+
                 elapsed = time.time() - start_time
                 elapsed = str(datetime.timedelta(seconds=elapsed))
                 print("Elapsed [{}], G_step [{}/{}], D_step[{}/{}], d_out_real: {:.4f}, "
@@ -202,8 +203,8 @@ class Trainer(object):
 
     def build_model(self):
 
-        self.G = Generator(self.batch_size, self.imsize, self.z_dim, self.g_conv_dim, self.nbits).cuda()
-        self.D = Discriminator(self.batch_size,self.imsize, self.d_conv_dim, self.nbits).cuda()
+        self.G = Generator(self.batch_size, self.imsize, self.z_dim, self.g_conv_dim, self.nbits, self.nbits_act).cuda()
+        self.D = Discriminator(self.batch_size,self.imsize, self.d_conv_dim, self.nbits, self.nbits_act).cuda()
 
         # print networks
         print(self.G)

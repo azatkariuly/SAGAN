@@ -5,7 +5,7 @@ from torch.autograd import Variable
 from spectral import SpectralNorm
 import numpy as np
 
-from quantization_modules import Conv2dLSQ, TransposeConv2dLSQ
+from quantization_modules import Conv2dLSQ, TransposeConv2dLSQ, ActLSQ
 
 class Self_Attn(nn.Module):
     """ Self attention Layer"""
@@ -44,7 +44,7 @@ class Self_Attn(nn.Module):
 class Generator(nn.Module):
     """Generator."""
 
-    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64, nbits=3):
+    def __init__(self, batch_size, image_size=64, z_dim=100, conv_dim=64, nbits=3, nbits_act=3):
         super(Generator, self).__init__()
         self.imsize = image_size
         layer1 = []
@@ -90,14 +90,36 @@ class Generator(nn.Module):
         self.attn1 = Self_Attn( 128, 'relu')
         self.attn2 = Self_Attn( 64,  'relu')
 
+        self.actQ1 = ActLSQ(nbits=nbits_act)
+        self.actQ2 = ActLSQ(nbits=nbits_act)
+        self.actQ3 = ActLSQ(nbits=nbits_act)
+        self.actQ4 = ActLSQ(nbits=nbits_act)
+        self.actQ5 = ActLSQ(nbits=nbits_act)
+        self.actQ6 = ActLSQ(nbits=nbits_act)
+        self.actQ7 = ActLSQ(nbits=nbits_act)
+
     def forward(self, z):
         z = z.view(z.size(0), z.size(1), 1, 1)
-        out=self.l1(z)
+        #act1
+        out=self.actQ1(z)
+        out=self.l1(out)
+        #act2
+        out=self.actQ2(out)
         out=self.l2(out)
+        #act3
+        out=self.actQ3(out)
         out=self.l3(out)
+        #act4
+        out=self.actQ4(out)
         out,p1 = self.attn1(out)
+        #act5
+        out=self.actQ5(out)
         out=self.l4(out)
+        #act6
+        out=self.actQ6(out)
         out,p2 = self.attn2(out)
+        #act7
+        out=self.actQ7(out)
         out=self.last(out)
 
         return out, p1, p2
@@ -106,7 +128,7 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
     """Discriminator, Auxiliary Classifier."""
 
-    def __init__(self, batch_size=64, image_size=64, conv_dim=64, nbits=3):
+    def __init__(self, batch_size=64, image_size=64, conv_dim=64, nbits=3, nbits_act=3):
         super(Discriminator, self).__init__()
         self.imsize = image_size
         layer1 = []
@@ -143,13 +165,35 @@ class Discriminator(nn.Module):
         self.attn1 = Self_Attn(256, 'relu')
         self.attn2 = Self_Attn(512, 'relu')
 
+        self.actQ1 = ActLSQ(nbits=nbits_act)
+        self.actQ2 = ActLSQ(nbits=nbits_act)
+        self.actQ3 = ActLSQ(nbits=nbits_act)
+        self.actQ4 = ActLSQ(nbits=nbits_act)
+        self.actQ5 = ActLSQ(nbits=nbits_act)
+        self.actQ6 = ActLSQ(nbits=nbits_act)
+        self.actQ7 = ActLSQ(nbits=nbits_act)
+
     def forward(self, x):
-        out = self.l1(x)
+        #act1
+        out=self.actQ1(x)
+        out = self.l1(out)
+        #act2
+        out=self.actQ2(out)
         out = self.l2(out)
+        #act3
+        out=self.actQ3(out)
         out = self.l3(out)
+        #act4
+        out=self.actQ4(out)
         out,p1 = self.attn1(out)
+        #act5
+        out=self.actQ5(out)
         out=self.l4(out)
+        #act6
+        out=self.actQ6(out)
         out,p2 = self.attn2(out)
+        #act7
+        out=self.actQ7(out)
         out=self.last(out)
 
         return out.squeeze(), p1, p2

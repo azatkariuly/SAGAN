@@ -14,6 +14,7 @@ def get_parameters():
     parser.add_argument('--g_num', type=int, default=5)
     parser.add_argument('--z_dim', type=int, default=128)
     parser.add_argument('--nbits', type=int, default=3)
+    parser.add_argument('--nbits_act', type=int, default=3)
     parser.add_argument('--g_conv_dim', type=int, default=64)
     parser.add_argument('--d_conv_dim', type=int, default=64)
     parser.add_argument('--lambda_gp', type=float, default=10)
